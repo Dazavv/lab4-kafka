@@ -1,4 +1,4 @@
-package com.hs.lab4.userservice;
+package com.hs.lab4.userservice.config;
 
 import io.swagger.v3.oas.models.OpenAPI;
 import io.swagger.v3.oas.models.info.Info;

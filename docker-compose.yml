@@ -109,6 +109,14 @@ services:
         condition: service_healthy
       postgres-users:
         condition: service_healthy
+      kafka-broker-1:
+        condition: service_healthy
+      kafka-broker-2:
+        condition: service_healthy
+      kafka-broker-3:
+        condition: service_healthy
+      kafka-topics-setup:
+        condition: service_completed_successfully
     networks:
       - microservices-net
     healthcheck:
@@ -138,6 +146,14 @@ services:
         condition: service_healthy
       postgres-events:
         condition: service_healthy
+      kafka-broker-1:
+        condition: service_healthy
+      kafka-broker-2:
+        condition: service_healthy
+      kafka-broker-3:
+        condition: service_healthy
+      kafka-topics-setup:
+        condition: service_completed_successfully
     networks:
       - microservices-net
     healthcheck:
@@ -169,6 +185,14 @@ services:
         condition: service_healthy
       postgres-group-events:
         condition: service_healthy
+      kafka-broker-1:
+        condition: service_healthy
+      kafka-broker-2:
+        condition: service_healthy
+      kafka-broker-3:
+        condition: service_healthy
+      kafka-topics-setup:
+        condition: service_completed_successfully
     networks:
       - microservices-net
     healthcheck:
@@ -201,6 +225,206 @@ services:
       timeout: 10s
       retries: 5
       start_period: 60s
+
+  notification-service:
+    build: ./notification-service
+    container_name: notification-service
+    ports:
+      - "8085:8085"  # Уникальный порт
+    environment:
+      SPRING_CONFIG_IMPORT: "configserver:http://config-server:8888"
+      SPRING_APPLICATION_NAME: notification-service
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: "kafka-broker-1:29092,kafka-broker-2:29093,kafka-broker-3:29094"
+#      SPRING_DATASOURCE_URL: "jdbc:postgresql://postgres-notifications:5432/notifications-db"
+#      SPRING_DATASOURCE_USERNAME: "postgres"
+#      SPRING_DATASOURCE_PASSWORD: "postgres"
+    depends_on:
+      config-server:
+        condition: service_healthy
+      eureka-server:
+        condition: service_healthy
+#      postgres-notifications:
+#        condition: service_healthy
+      kafka-broker-1:
+        condition: service_healthy
+      kafka-broker-2:
+        condition: service_healthy
+      kafka-broker-3:
+        condition: service_healthy
+      kafka-topics-setup:
+        condition: service_completed_successfully
+    networks:
+      - microservices-net
+    healthcheck:
+      test: [ "CMD", "curl", "-f", "http://localhost:8084/actuator/health" ]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 60s
+  zookeeper:
+    image: confluentinc/cp-zookeeper:7.5.0
+    container_name: zookeeper
+    environment:
+      ZOOKEEPER_CLIENT_PORT: 2181
+      ZOOKEEPER_TICK_TIME: 2000
+      ZOOKEEPER_SYNC_LIMIT: 2
+    ports:
+      - "2181:2181"
+    networks:
+      - microservices-net
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "2181"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Kafka Брокер 1
+  kafka-broker-1:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: kafka-broker-1
+    depends_on:
+      zookeeper:
+        condition: service_healthy
+    ports:
+      - "9092:9092"      # Внешний порт для подключения извне
+      - "29092:29092"    # Внутренний порт для связи между брокерами
+    environment:
+      KAFKA_BROKER_ID: 1
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:29092,PLAINTEXT_HOST://0.0.0.0:9092
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka-broker-1:29092,PLAINTEXT_HOST://localhost:9092
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 3
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 2
+      KAFKA_DEFAULT_REPLICATION_FACTOR: 3
+      KAFKA_MIN_INSYNC_REPLICAS: 2
+      KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
+    networks:
+      - microservices-net
+    healthcheck:
+      test: ["CMD", "kafka-topics", "--bootstrap-server", "localhost:29092", "--list"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # Kafka Брокер 2
+  kafka-broker-2:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: kafka-broker-2
+    depends_on:
+      zookeeper:
+        condition: service_healthy
+    ports:
+      - "9093:9093"
+      - "29093:29093"
+    environment:
+      KAFKA_BROKER_ID: 2
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:29093,PLAINTEXT_HOST://0.0.0.0:9093
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka-broker-2:29093,PLAINTEXT_HOST://localhost:9093
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 3
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 2
+    networks:
+      - microservices-net
+
+  # Kafka Брокер 3
+  kafka-broker-3:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: kafka-broker-3
+    depends_on:
+      zookeeper:
+        condition: service_healthy
+    ports:
+      - "9094:9094"
+      - "29094:29094"
+    environment:
+      KAFKA_BROKER_ID: 3
+      KAFKA_ZOOKEEPER_CONNECT: zookeeper:2181
+      KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:29094,PLAINTEXT_HOST://0.0.0.0:9094
+      KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://kafka-broker-3:29094,PLAINTEXT_HOST://localhost:9094
+      KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,PLAINTEXT_HOST:PLAINTEXT
+      KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+      KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
+      KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 3
+      KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 2
+    networks:
+      - microservices-net
+
+  # Kafka UI (для мониторинга)
+  kafka-ui:
+    image: provectuslabs/kafka-ui:latest
+    container_name: kafka-ui
+    ports:
+      - "8090:8080"
+    environment:
+      KAFKA_CLUSTERS_0_NAME: microservices-cluster
+      KAFKA_CLUSTERS_0_BOOTSTRAPSERVERS: kafka-broker-1:29092,kafka-broker-2:29093,kafka-broker-3:29094
+      KAFKA_CLUSTERS_0_PROPERTIES_SECURITY_PROTOCOL: PLAINTEXT
+      DYNAMIC_CONFIG_ENABLED: "true"
+    depends_on:
+      - kafka-broker-1
+      - kafka-broker-2
+      - kafka-broker-3
+    networks:
+      - microservices-net
+
+  # Создание топиков с репликацией
+  kafka-topics-setup:
+    image: confluentinc/cp-kafka:7.5.0
+    container_name: kafka-topics-setup
+    depends_on:
+      kafka-broker-1:
+        condition: service_healthy
+      kafka-broker-2:
+        condition: service_healthy
+      kafka-broker-3:
+        condition: service_healthy
+    command: >
+      /bin/bash -c "
+      echo 'Waiting for Kafka to be ready...'
+      sleep 30
+      
+      echo 'Creating topics with replication factor 3...'
+      
+      # Топик для уведомлений о добавлении ролей
+      kafka-topics --bootstrap-server kafka-broker-1:29092 --create --if-not-exists \
+        --topic user-role-added \
+        --partitions 3 \
+        --replication-factor 3 \
+        --config min.insync.replicas=2
+      
+      # Топик для уведомлений о событиях
+      kafka-topics --bootstrap-server kafka-broker-1:29092 --create --if-not-exists \
+        --topic user-events \
+        --partitions 3 \
+        --replication-factor 3 \
+        --config min.insync.replicas=2
+      
+      # Топик для уведомлений о групповых событиях
+      kafka-topics --bootstrap-server kafka-broker-1:29092 --create --if-not-exists \
+        --topic group-events \
+        --partitions 3 \
+        --replication-factor 3 \
+        --config min.insync.replicas=2
+      
+      # Топик для логов (опционально)
+      kafka-topics --bootstrap-server kafka-broker-1:29092 --create --if-not-exists \
+        --topic application-logs \
+        --partitions 3 \
+        --replication-factor 3 \
+        --config min.insync.replicas=2
+      
+      echo 'Topics created successfully!'
+      kafka-topics --bootstrap-server kafka-broker-1:29092 --list
+      "
+    networks:
+      - microservices-net
 
 networks:
   microservices-net:

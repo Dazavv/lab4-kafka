@@ -73,8 +73,7 @@ public class AuthController {
 
     @PostMapping("/add-role")
     @PreAuthorize("hasAuthority('ADMIN')")
-    public Mono<String> addRoleToUser(@RequestBody AddRoleToUserRequest request) {
-        return authService.addRoleToUser(request.getLogin(), request.getRole())
-                .thenReturn("User with login: " + request.getLogin() + " has new role: " + request.getRole());
+    public Mono<Void> addRoleToUser(@RequestBody AddRoleToUserRequest request) {
+        return authService.addRoleToUser(request.getLogin(), request.getRole());
     }
 }

@@ -1,5 +1,6 @@
 package com.hs.lab4.userservice.service;
 
+import com.hs.lab4.userservice.dto.kafkaDto.UserRoleAddedEvent;
 import com.hs.lab4.userservice.dto.responses.JwtResponse;
 import com.hs.lab4.userservice.entity.User;
 import com.hs.lab4.userservice.enums.Role;
@@ -25,6 +26,7 @@ import java.util.Map;
 public class AuthService {
 
     private final AuthUserService authUserService;
+    private final KafkaMessagingService kafkaMessagingService;
     private final JwtProvider jwtProvider;
     private final PasswordEncoder passwordEncoder;
     private final Map<String, String> refreshStorage = new HashMap<>();
@@ -134,8 +136,8 @@ public class AuthService {
         return getUser(login)
                 .publishOn(Schedulers.boundedElastic())
                 .flatMap(user -> Mono.fromRunnable(() -> authUserService.addNewRole(user, role))
-                        .subscribeOn(Schedulers.boundedElastic()))
-                .then();
+                        .subscribeOn(Schedulers.boundedElastic())
+                        .then(kafkaMessagingService.publishRoleAddedEvent(new UserRoleAddedEvent(login, role.getAuthority()))));
     }
 
     public Mono<JwtAuthentication> getAuthInfo() {
