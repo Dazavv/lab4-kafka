@@ -252,8 +252,8 @@ services:
         condition: service_healthy
       kafka-broker-3:
         condition: service_healthy
-      kafka-topics-setup:
-        condition: service_completed_successfully
+#      kafka-topics-setup:
+#        condition: service_completed_successfully
     networks:
       - microservices-net
     healthcheck:
@@ -396,44 +396,9 @@ services:
         condition: service_healthy
       kafka-broker-3:
         condition: service_healthy
-    command: >
-      /bin/bash -c "
-      echo 'Waiting for Kafka to be ready...'
-      sleep 30
-      
-      echo 'Creating topics with replication factor 3...'
-      
-      # Топик для уведомлений о добавлении ролей
-      kafka-topics --bootstrap-server kafka-broker-1:29092 --create --if-not-exists \
-        --topic user-role-added \
-        --partitions 3 \
-        --replication-factor 3 \
-        --config min.insync.replicas=2
-      
-      # Топик для уведомлений о событиях
-      kafka-topics --bootstrap-server kafka-broker-1:29092 --create --if-not-exists \
-        --topic user-events \
-        --partitions 3 \
-        --replication-factor 3 \
-        --config min.insync.replicas=2
-      
-      # Топик для уведомлений о групповых событиях
-      kafka-topics --bootstrap-server kafka-broker-1:29092 --create --if-not-exists \
-        --topic group-events \
-        --partitions 3 \
-        --replication-factor 3 \
-        --config min.insync.replicas=2
-      
-      # Топик для логов (опционально)
-      kafka-topics --bootstrap-server kafka-broker-1:29092 --create --if-not-exists \
-        --topic application-logs \
-        --partitions 3 \
-        --replication-factor 3 \
-        --config min.insync.replicas=2
-      
-      echo 'Topics created successfully!'
-      kafka-topics --bootstrap-server kafka-broker-1:29092 --list
-      "
+    volumes:
+      - ./create-topics.sh:/create-topics.sh
+    command: [ "/bin/bash", "/create-topics.sh" ]
     networks:
       - microservices-net
 
