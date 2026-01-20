@@ -1,4 +1,4 @@
-package com.hs.lab4.eventservice.auth.jwt;
+package com.hs.lab4.userservice.auth.jwt;
 
 import io.jsonwebtoken.Claims;
 import lombok.RequiredArgsConstructor;
@@ -27,6 +27,7 @@ public class JwtFilter implements WebFilter {
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, WebFilterChain chain) {
         String token = extract(exchange);
+        log.info("token: {}", token);
 
         if (token == null) {
             return chain.filter(exchange);

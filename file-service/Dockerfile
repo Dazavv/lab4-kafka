@@ -2,7 +2,7 @@ FROM eclipse-temurin:21-jdk AS build
 WORKDIR /workspace
 
 COPY gradlew ./
-COPY gradle gradle/
+COPY gradle/ gradle/
 RUN sed -i 's/\r$//' gradlew && chmod +x ./gradlew
 
 COPY build.gradle* settings.gradle* gradle.properties* ./

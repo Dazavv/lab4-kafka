@@ -14,10 +14,10 @@ import java.util.List;
 public class OpenApiConfig {
 
     @Bean
-    public OpenAPI userServiceOpenAPI() {
+    public OpenAPI fileServiceOpenAPI() {
         return new OpenAPI()
                 .info(new Info()
-                        .title("User Service API")
+                        .title("File Service API")
                         .version("v0"))
                 .servers(List.of(new Server().url("/")))
                 .addSecurityItem(new SecurityRequirement()
