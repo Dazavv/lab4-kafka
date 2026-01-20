@@ -230,7 +230,7 @@ services:
     build: ./notification-service
     container_name: notification-service
     ports:
-      - "8085:8085"  # Уникальный порт
+      - "8085:8085"
     environment:
       SPRING_CONFIG_IMPORT: "configserver:http://config-server:8888"
       SPRING_APPLICATION_NAME: notification-service
@@ -257,11 +257,12 @@ services:
     networks:
       - microservices-net
     healthcheck:
-      test: [ "CMD", "curl", "-f", "http://localhost:8084/actuator/health" ]
+      test: [ "CMD", "curl", "-f", "http://localhost:8085/actuator/health" ]
       interval: 30s
       timeout: 10s
       retries: 5
       start_period: 60s
+
   zookeeper:
     image: confluentinc/cp-zookeeper:7.5.0
     container_name: zookeeper
@@ -332,6 +333,11 @@ services:
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 2
     networks:
       - microservices-net
+    healthcheck:
+      test: [ "CMD", "kafka-topics", "--bootstrap-server", "localhost:29093", "--list" ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   # Kafka Брокер 3
   kafka-broker-3:
@@ -355,6 +361,11 @@ services:
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 2
     networks:
       - microservices-net
+    healthcheck:
+      test: ["CMD", "kafka-topics", "--bootstrap-server", "localhost:29094", "--list"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
 
   # Kafka UI (для мониторинга)
   kafka-ui:
