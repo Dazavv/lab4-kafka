@@ -102,6 +102,7 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://postgres-users:5432/users-db?sslmode=disable
       SPRING_DATASOURCE_USERNAME: postgres
       SPRING_DATASOURCE_PASSWORD: postgres
+      SPRING_KAFKA_BOOTSTRAP_SERVERS: "kafka-broker-1:29092,kafka-broker-2:29093,kafka-broker-3:29094"
     depends_on:
       config-server:
         condition: service_healthy
@@ -300,8 +301,8 @@ services:
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 3
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 2
-      KAFKA_DEFAULT_REPLICATION_FACTOR: 3
-      KAFKA_MIN_INSYNC_REPLICAS: 2
+      KAFKA_DEFAULT_REPLICATION_FACTOR: 1
+      KAFKA_MIN_INSYNC_REPLICAS: 1
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
     networks:
       - microservices-net
