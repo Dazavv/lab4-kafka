@@ -1,13 +1,12 @@
 package com.hs.lab4.fileservice.service;
 
-import com.hs.lab4.userservice.config.FileStorageConfig;
-import com.hs.lab4.userservice.dto.FileDto;
-import com.hs.lab4.userservice.entity.FileMetadata;
-import com.hs.lab4.userservice.exceptions.FileNotFoundException;
-import com.hs.lab4.userservice.exceptions.FileStorageException;
-import com.hs.lab4.userservice.mapper.FileMapper;
-import com.hs.lab4.userservice.repository.FileRepository;
-import com.hs.lab4.userservice.service.FileService;
+import com.hs.lab4.fileservice.config.FileStorageConfig;
+import com.hs.lab4.fileservice.dto.FileDto;
+import com.hs.lab4.fileservice.entity.FileMetadata;
+import com.hs.lab4.fileservice.exceptions.FileNotFoundException;
+import com.hs.lab4.fileservice.exceptions.FileStorageException;
+import com.hs.lab4.fileservice.mapper.FileMapper;
+import com.hs.lab4.fileservice.repository.FileRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -21,13 +20,13 @@ import org.springframework.http.codec.multipart.FilePart;
 import reactor.core.publisher.Flux;
 import reactor.test.StepVerifier;
 
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.Optional;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.lenient;
 
 @ExtendWith(MockitoExtension.class)
 class FileServiceTest {
@@ -54,7 +53,6 @@ class FileServiceTest {
     @BeforeEach
     void setUp() {
         testUploadPath = tempDir.resolve("uploads");
-        when(fileStorageConfig.getUploadPath()).thenReturn(testUploadPath);
 
         testMetadata = FileMetadata.builder()
                 .id(1L)
@@ -138,6 +136,7 @@ class FileServiceTest {
 
     @Test
     void testUploadFile_Success() throws Exception {
+        when(fileStorageConfig.getUploadPath()).thenReturn(testUploadPath);
         FilePart filePart = mock(FilePart.class);
         when(filePart.filename()).thenReturn("test.txt");
         
@@ -177,11 +176,11 @@ class FileServiceTest {
     @Test
     void testUploadFile_StorageException() {
         FilePart filePart = mock(FilePart.class);
-        when(filePart.filename()).thenReturn("test.txt");
+        lenient().when(filePart.filename()).thenReturn("test.txt");
         
         DataBuffer dataBuffer = new DefaultDataBufferFactory().wrap("test content".getBytes());
         Flux<DataBuffer> content = Flux.just(dataBuffer);
-        when(filePart.content()).thenReturn(content);
+        lenient().when(filePart.content()).thenReturn(content);
 
         Path invalidPath = Path.of("/invalid/path/that/cannot/be/created");
         when(fileStorageConfig.getUploadPath()).thenReturn(invalidPath);

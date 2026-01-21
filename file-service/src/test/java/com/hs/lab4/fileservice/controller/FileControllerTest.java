@@ -1,8 +1,7 @@
 package com.hs.lab4.fileservice.controller;
 
-import com.hs.lab4.userservice.controller.FileController;
-import com.hs.lab4.userservice.dto.FileDto;
-import com.hs.lab4.userservice.service.FileService;
+import com.hs.lab4.fileservice.dto.FileDto;
+import com.hs.lab4.fileservice.service.FileService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -45,7 +44,6 @@ class FileControllerTest {
     @Test
     void testUploadFile_Success() {
         FilePart testFilePart = mock(FilePart.class);
-        when(testFilePart.filename()).thenReturn("test.txt");
         when(fileService.uploadFile(any(FilePart.class))).thenReturn(Mono.just(testDto));
 
         StepVerifier.create(fileController.uploadFile(testFilePart))
