@@ -6,8 +6,6 @@ import com.hs.lab4.groupeventservice.entity.GroupEvent;
 import com.hs.lab4.groupeventservice.enums.GroupEventStatus;
 import com.hs.lab4.groupeventservice.exceptions.EventNotFoundException;
 import com.hs.lab4.groupeventservice.repository.GroupEventRepository;
-import com.hs.lab4.groupeventservice.service.GroupEventService;
-import com.hs.lab4.groupeventservice.service.UserClientService;
 import feign.FeignException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -15,7 +13,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import reactor.core.publisher.Flux;
 import reactor.core.publisher.Mono;
 import reactor.test.StepVerifier;
 
