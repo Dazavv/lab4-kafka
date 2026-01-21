@@ -7,6 +7,8 @@ import com.hs.lab4.eventservice.exceptions.EventConflictException;
 import com.hs.lab4.eventservice.exceptions.EventNotFoundException;
 import com.hs.lab4.eventservice.exceptions.UserNotFoundException;
 import com.hs.lab4.eventservice.exceptions.UserServiceUnavailableException;
+import com.hs.lab4.eventservice.kafka.EventNotificationMessage;
+import com.hs.lab4.eventservice.kafka.EventNotificationProducer;
 import com.hs.lab4.eventservice.repository.EventRepository;
 import feign.FeignException;
 import io.github.resilience4j.circuitbreaker.annotation.CircuitBreaker;
@@ -27,6 +29,8 @@ import java.util.List;
 public class EventService {
     private final EventRepository eventRepository;
     private final UserClientService userClientService;
+    private final EventNotificationProducer notificationProducer;
+
     public Flux<Event> getAllEvents() {
         return eventRepository.findAll();
     }
@@ -54,21 +58,20 @@ public class EventService {
                                     event.setStartTime(startTime);
                                     event.setEndTime(endTime);
                                     event.setOwnerId(ownerId);
-                                    return eventRepository.save(event);
+                                    return eventRepository.save(event)
+                                            .doOnSuccess(savedEvent -> {
+                                                EventNotificationMessage message = new EventNotificationMessage(
+                                                        savedEvent.getId(),
+                                                        savedEvent.getName(),
+                                                        savedEvent.getDescription(),
+                                                        savedEvent.getOwnerId(),
+                                                        "Event created: " + savedEvent.getName() + " for user " + savedEvent.getOwnerId()
+                                                );
+                                                notificationProducer.sendNotification(message);
+                                            });
                                 })
                 );
     }
-
-//    @CircuitBreaker(name = "userService", fallbackMethod = "userFallback")
-//    public Mono<UserDto> getUserByIdWithCircuitBreaker(Long ownerId) {
-//        return userClient.getUserById(ownerId);
-//    }
-//
-//    public Mono<UserDto> userFallback(Long ownerId,
-//                                      Throwable t) {
-//        return Mono.error(new UserServiceUnavailableException("User-service unavailable, try later"));
-//    }
-
 
     public Flux<Event> getEventsByOwnerId(Long id) {
         return eventRepository.findByOwnerId(id);
@@ -112,4 +115,13 @@ public class EventService {
                         .map(events -> new PageImpl<>(events, pageable, total))
                 );
     }
+    //    @CircuitBreaker(name = "userService", fallbackMethod = "userFallback")
+//    public Mono<UserDto> getUserByIdWithCircuitBreaker(Long ownerId) {
+//        return userClient.getUserById(ownerId);
+//    }
+//
+//    public Mono<UserDto> userFallback(Long ownerId,
+//                                      Throwable t) {
+//        return Mono.error(new UserServiceUnavailableException("User-service unavailable, try later"));
+//    }
 }

@@ -25,7 +25,6 @@ public class GroupEventService {
         return Mono.fromCallable(groupEventRepository::findAllWithParticipants).subscribeOn(Schedulers.boundedElastic()).flatMapMany(Flux::fromIterable);
     }
 
-    //TODO поправить метод чтобы не вызывался fallback клиента
     @Transactional
     public Mono<GroupEvent> addGroupEvent(String name,
                                           String description,
@@ -34,19 +33,19 @@ public class GroupEventService {
     ) {
         return userClientService.getUserById(ownerId)
                 .flatMap(owner ->
-                        Flux.fromIterable(participantsIds)
+                                Flux.fromIterable(participantsIds)
 //                                .flatMap(userClientService::getUserById, 1)
 //                                .map(UserDto::id)
-                                .collectList()
-                                .flatMap(participants ->
-                                        Mono.fromCallable(() -> {
-                                            GroupEvent groupEvent = GroupEvent.builder()
-                                                    .name(name)
-                                                    .description(description)
-                                                    .participantIds(participantsIds)
-                                                    .ownerId(ownerId)
-                                                    .status(GroupEventStatus.PENDING)
-                                                    .build();
+                                        .collectList()
+                                        .flatMap(participants ->
+                                                Mono.fromCallable(() -> {
+                                                    GroupEvent groupEvent = GroupEvent.builder()
+                                                            .name(name)
+                                                            .description(description)
+                                                            .participantIds(participantsIds)
+                                                            .ownerId(ownerId)
+                                                            .status(GroupEventStatus.PENDING)
+                                                            .build();
 
                                             return groupEventRepository.save(groupEvent);
                                         }).subscribeOn(Schedulers.boundedElastic())

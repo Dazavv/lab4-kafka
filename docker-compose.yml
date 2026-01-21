@@ -69,6 +69,23 @@ services:
       timeout: 5s
       retries: 5
 
+  postgres-notifications:
+    image: postgres:15-alpine
+    container_name: postgres-notifications
+    environment:
+      POSTGRES_DB: notifications-db
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5434:5432"
+    networks:
+      - microservices-net
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   eureka-server:
     build: ./eureka-server
     container_name: eureka-server
@@ -237,24 +254,24 @@ services:
       SPRING_APPLICATION_NAME: notification-service
       SPRING_PROFILES_ACTIVE: docker
       SPRING_KAFKA_BOOTSTRAP_SERVERS: "kafka-broker-1:29092,kafka-broker-2:29093,kafka-broker-3:29094"
-#      SPRING_DATASOURCE_URL: "jdbc:postgresql://postgres-notifications:5432/notifications-db"
-#      SPRING_DATASOURCE_USERNAME: "postgres"
-#      SPRING_DATASOURCE_PASSWORD: "postgres"
+      SPRING_DATASOURCE_URL: "jdbc:postgresql://postgres-notifications:5432/notifications-db"
+      SPRING_DATASOURCE_USERNAME: "postgres"
+      SPRING_DATASOURCE_PASSWORD: "postgres"
     depends_on:
       config-server:
         condition: service_healthy
       eureka-server:
         condition: service_healthy
-#      postgres-notifications:
-#        condition: service_healthy
+      postgres-notifications:
+        condition: service_healthy
       kafka-broker-1:
         condition: service_healthy
       kafka-broker-2:
         condition: service_healthy
       kafka-broker-3:
         condition: service_healthy
-#      kafka-topics-setup:
-#        condition: service_completed_successfully
+      kafka-topics-setup:
+        condition: service_completed_successfully
     networks:
       - microservices-net
     healthcheck:
@@ -301,8 +318,8 @@ services:
       KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 3
       KAFKA_TRANSACTION_STATE_LOG_REPLICATION_FACTOR: 3
       KAFKA_TRANSACTION_STATE_LOG_MIN_ISR: 2
-      KAFKA_DEFAULT_REPLICATION_FACTOR: 1
-      KAFKA_MIN_INSYNC_REPLICAS: 1
+      KAFKA_DEFAULT_REPLICATION_FACTOR: 3
+      KAFKA_MIN_INSYNC_REPLICAS: 2
       KAFKA_AUTO_CREATE_TOPICS_ENABLE: "false"
     networks:
       - microservices-net

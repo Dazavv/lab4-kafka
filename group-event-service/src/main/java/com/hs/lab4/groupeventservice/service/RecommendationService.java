@@ -6,6 +6,8 @@ import com.hs.lab4.groupeventservice.entity.GroupEvent;
 import com.hs.lab4.groupeventservice.enums.GroupEventStatus;
 import com.hs.lab4.groupeventservice.exceptions.EventNotFoundException;
 import com.hs.lab4.groupeventservice.exceptions.NoAvailableSlotsException;
+import com.hs.lab4.groupeventservice.kafka.EventNotificationMessage;
+import com.hs.lab4.groupeventservice.kafka.EventNotificationProducer;
 import com.hs.lab4.groupeventservice.mapper.GroupEventMapper;
 import com.hs.lab4.groupeventservice.repository.GroupEventRepository;
 import com.hs.lab4.groupeventservice.util.SlotCalculator;
@@ -18,6 +20,7 @@ import reactor.core.scheduler.Schedulers;
 
 import java.time.Duration;
 import java.time.LocalDate;
+import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
 
@@ -28,6 +31,7 @@ public class RecommendationService {
     private final GroupEventMapper groupEventMapper;
     private final EventClientService eventClientService;
     private final GroupEventLoader loader;
+    private final EventNotificationProducer eventNotificationProducer;
 
     @Transactional
     public Flux<RecommendTimeSlotDto> recommendSlots(LocalDate periodStart, LocalDate periodEnd, Duration duration, Long groupEventId) {
@@ -53,6 +57,20 @@ public class RecommendationService {
             ge.setStatus(GroupEventStatus.CONFIRMED);
 
             groupEventRepository.save(ge);
+
+            ge.getParticipantIds().forEach(participantId -> {
+                EventNotificationMessage message = EventNotificationMessage.builder()
+                        .eventId(ge.getId())
+                        .userId(participantId)
+                        .message("Group event '" + ge.getName() + "' confirmed for " +
+                                date + " from " + startTime + " to " + endTime)
+                        .status("NEW")
+                        .createdAt(LocalDateTime.now())
+                        .build();
+
+                eventNotificationProducer.sendNotification(message);
+            });
+
 
             return groupEventMapper.toGroupEventDto(ge);
         }).subscribeOn(Schedulers.boundedElastic());
